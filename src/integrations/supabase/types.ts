@@ -9,7 +9,102 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      empleados: {
+        Row: {
+          apellido: string
+          created_at: string
+          direccion: string | null
+          email: string | null
+          especialidad: string | null
+          estado: string
+          fecha_ingreso: string
+          id: string
+          nombre: string
+          puesto: string
+          salario: number | null
+          telefono: string | null
+          updated_at: string
+        }
+        Insert: {
+          apellido: string
+          created_at?: string
+          direccion?: string | null
+          email?: string | null
+          especialidad?: string | null
+          estado?: string
+          fecha_ingreso?: string
+          id?: string
+          nombre: string
+          puesto: string
+          salario?: number | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Update: {
+          apellido?: string
+          created_at?: string
+          direccion?: string | null
+          email?: string | null
+          especialidad?: string | null
+          estado?: string
+          fecha_ingreso?: string
+          id?: string
+          nombre?: string
+          puesto?: string
+          salario?: number | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sobres: {
+        Row: {
+          abono: number
+          cliente: string
+          created_at: string
+          descripcion_grabado: string | null
+          estado: string
+          fecha_ingreso: string
+          fecha_limite_entrega: string | null
+          id: string
+          notas: string | null
+          precio_total: number
+          tipo: string
+          tipo_reparacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          abono?: number
+          cliente: string
+          created_at?: string
+          descripcion_grabado?: string | null
+          estado?: string
+          fecha_ingreso?: string
+          fecha_limite_entrega?: string | null
+          id?: string
+          notas?: string | null
+          precio_total?: number
+          tipo: string
+          tipo_reparacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          abono?: number
+          cliente?: string
+          created_at?: string
+          descripcion_grabado?: string | null
+          estado?: string
+          fecha_ingreso?: string
+          fecha_limite_entrega?: string | null
+          id?: string
+          notas?: string | null
+          precio_total?: number
+          tipo?: string
+          tipo_reparacion?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

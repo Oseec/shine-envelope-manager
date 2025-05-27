@@ -26,7 +26,6 @@ const Index = () => {
 
   const handleView = (item: any) => {
     const itemType = activeTab === 'sobres' ? 'sobre' : 'empleado';
-    const itemId = activeTab === 'sobres' ? item.id : item.id;
     const itemName = activeTab === 'sobres' ? item.cliente : `${item.nombre} ${item.apellido}`;
     
     toast({
@@ -95,14 +94,14 @@ const Index = () => {
     return (
       <div className="text-center py-8 md:py-12 px-4">
         <div className="text-4xl md:text-6xl mb-4">🚧</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Sección en desarrollo</h3>
-        <p className="text-gray-600 text-sm md:text-base">Esta funcionalidad estará disponible próximamente.</p>
+        <h3 className="text-lg font-medium text-gray-100 mb-2">Sección en desarrollo</h3>
+        <p className="text-gray-400 text-sm md:text-base">Esta funcionalidad estará disponible próximamente.</p>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-purple-50">
+    <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="container mx-auto px-2 md:px-4 py-4 md:py-8">
         <Header 
           title="Joyería Karina" 

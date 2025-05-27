@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Filter } from 'lucide-react';
 import SobreCard from './SobreCard';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface SobresListProps {
   onCreateNew: () => void;
@@ -16,60 +18,38 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState('all');
   const [filterTipo, setFilterTipo] = useState('all');
+  const [sobres, setSobres] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Datos de ejemplo
-  const sobres = [
-    {
-      id: '001',
-      cliente: 'María González',
-      tipo: 'reparacion',
-      tipoReparacion: 'Soldadura',
-      estado: 'En Proceso',
-      precioTotal: 150.00,
-      abono: 50.00,
-      fechaIngreso: new Date('2024-01-15'),
-      fechaLimiteEntrega: new Date('2024-01-25'),
-    },
-    {
-      id: '002',
-      cliente: 'Juan Pérez',
-      tipo: 'grabado',
-      tipoReparacion: 'Grabado',
-      estado: 'Pendiente',
-      precioTotal: 80.00,
-      abono: 0,
-      fechaIngreso: new Date('2024-01-18'),
-      fechaLimiteEntrega: new Date('2024-01-28'),
-      descripcionDelGrabado: 'Grabado de nombres en anillo de boda'
-    },
-    {
-      id: '003',
-      cliente: 'Ana Rodríguez',
-      tipo: 'reparacion',
-      tipoReparacion: 'Pulido',
-      estado: 'Completado',
-      precioTotal: 120.00,
-      abono: 120.00,
-      fechaIngreso: new Date('2024-01-10'),
-      fechaLimiteEntrega: new Date('2024-01-20'),
-    },
-    {
-      id: '004',
-      cliente: 'Carlos Martínez',
-      tipo: 'reparacion',
-      tipoReparacion: 'Engaste',
-      estado: 'Entregado',
-      precioTotal: 300.00,
-      abono: 300.00,
-      fechaIngreso: new Date('2024-01-05'),
-      fechaLimiteEntrega: new Date('2024-01-15'),
+  useEffect(() => {
+    fetchSobres();
+  }, []);
+
+  const fetchSobres = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sobres')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSobres(data || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los sobres",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const filteredSobres = sobres.filter(sobre => {
     const matchesSearch = sobre.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          sobre.id.includes(searchTerm) ||
-                         sobre.tipoReparacion.toLowerCase().includes(searchTerm.toLowerCase());
+                         (sobre.tipo_reparacion && sobre.tipo_reparacion.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesEstado = filterEstado === 'all' || sobre.estado.toLowerCase() === filterEstado;
     const matchesTipo = filterTipo === 'all' || sobre.tipo === filterTipo;
@@ -77,17 +57,25 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
     return matchesSearch && matchesEstado && matchesTipo;
   });
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-gray-400">Cargando sobres...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header y botón de crear */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestión de Sobres</h2>
-          <p className="text-gray-600 mt-1">Administra los trabajos de reparación y grabado</p>
+          <h2 className="text-2xl font-bold text-gray-100">Gestión de Sobres</h2>
+          <p className="text-gray-400 mt-1">Administra los trabajos de reparación y grabado</p>
         </div>
         <Button 
           onClick={onCreateNew}
-          className="bg-primary hover:bg-primary-600 flex items-center gap-2"
+          className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Nuevo Sobre
@@ -95,7 +83,7 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
       </div>
 
       {/* Filtros y búsqueda */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -103,15 +91,15 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
               placeholder="Buscar por cliente, ID o tipo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
             />
           </div>
           
           <Select value={filterEstado} onValueChange={setFilterEstado}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-100">
               <SelectValue placeholder="Filtrar por estado" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-gray-700 border-gray-600">
               <SelectItem value="all">Todos los estados</SelectItem>
               <SelectItem value="pendiente">Pendiente</SelectItem>
               <SelectItem value="en proceso">En Proceso</SelectItem>
@@ -121,17 +109,17 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
           </Select>
 
           <Select value={filterTipo} onValueChange={setFilterTipo}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-100">
               <SelectValue placeholder="Filtrar por tipo" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-gray-700 border-gray-600">
               <SelectItem value="all">Todos los tipos</SelectItem>
               <SelectItem value="reparacion">Reparación</SelectItem>
               <SelectItem value="grabado">Grabado</SelectItem>
             </SelectContent>
           </Select>
 
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button variant="outline" className="flex items-center gap-2 border-gray-600 text-gray-300 hover:bg-gray-700">
             <Filter className="h-4 w-4" />
             Filtros avanzados
           </Button>
@@ -140,11 +128,11 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <div className="bg-yellow-900/30 p-4 rounded-lg border border-yellow-600/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-yellow-800 text-sm font-medium">Pendientes</p>
-              <p className="text-2xl font-bold text-yellow-900">
+              <p className="text-yellow-400 text-sm font-medium">Pendientes</p>
+              <p className="text-2xl font-bold text-yellow-300">
                 {sobres.filter(s => s.estado === 'Pendiente').length}
               </p>
             </div>
@@ -152,11 +140,11 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
           </div>
         </div>
         
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-600/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-800 text-sm font-medium">En Proceso</p>
-              <p className="text-2xl font-bold text-blue-900">
+              <p className="text-blue-400 text-sm font-medium">En Proceso</p>
+              <p className="text-2xl font-bold text-blue-300">
                 {sobres.filter(s => s.estado === 'En Proceso').length}
               </p>
             </div>
@@ -164,11 +152,11 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
           </div>
         </div>
 
-        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+        <div className="bg-green-900/30 p-4 rounded-lg border border-green-600/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-800 text-sm font-medium">Completados</p>
-              <p className="text-2xl font-bold text-green-900">
+              <p className="text-green-400 text-sm font-medium">Completados</p>
+              <p className="text-2xl font-bold text-green-300">
                 {sobres.filter(s => s.estado === 'Completado').length}
               </p>
             </div>
@@ -176,11 +164,11 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
           </div>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-800 text-sm font-medium">Entregados</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-gray-400 text-sm font-medium">Entregados</p>
+              <p className="text-2xl font-bold text-gray-300">
                 {sobres.filter(s => s.estado === 'Entregado').length}
               </p>
             </div>
@@ -194,7 +182,13 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
         {filteredSobres.map((sobre) => (
           <SobreCard
             key={sobre.id}
-            sobre={sobre}
+            sobre={{
+              ...sobre,
+              fechaIngreso: new Date(sobre.fecha_ingreso),
+              fechaLimiteEntrega: sobre.fecha_limite_entrega ? new Date(sobre.fecha_limite_entrega) : undefined,
+              tipoReparacion: sobre.tipo_reparacion || sobre.tipo,
+              descripcionDelGrabado: sobre.descripcion_grabado
+            }}
             onEdit={onEdit}
             onView={onView}
           />
@@ -204,8 +198,8 @@ const SobresList: React.FC<SobresListProps> = ({ onCreateNew, onEdit, onView }) 
       {filteredSobres.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron sobres</h3>
-          <p className="text-gray-600">
+          <h3 className="text-lg font-medium text-gray-100 mb-2">No se encontraron sobres</h3>
+          <p className="text-gray-400">
             {searchTerm || filterEstado !== 'all' || filterTipo !== 'all' 
               ? 'Intenta ajustar los filtros de búsqueda'
               : 'Crea tu primer sobre para comenzar'
