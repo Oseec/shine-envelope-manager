@@ -1,242 +1,273 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { X, Save } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface SobreFormProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (sobre: any) => void;
   onCancel: () => void;
   editingSobre?: any;
 }
 
 const SobreForm: React.FC<SobreFormProps> = ({ onSubmit, onCancel, editingSobre }) => {
   const [formData, setFormData] = useState({
-    cliente: '',
-    tipo: 'reparacion',
-    tipo_reparacion: '',
-    descripcion_grabado: '',
-    estado: 'Pendiente',
-    precio_total: '',
+    idUbicacion: '',
+    idArticulo: '',
+    idTiposReparacion: '',
+    precioTotal: '',
+    tipoReparacion: '',
+    idEstado: '1',
+    fechaIngreso: new Date(),
+    fechaEntrega: undefined as Date | undefined,
+    idCliente: '',
     abono: '',
-    fecha_limite_entrega: '',
-    notas: ''
+    saldoPendiente: '',
+    tipo: 'reparacion',
+    fechaLimiteEntrega: undefined as Date | undefined,
+    idTipoLetra: '',
+    descripcionDelGrabado: '',
+    entregara: '',
+    createdBy: '1',
+    updatedBy: '1'
   });
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    if (editingSobre) {
-      setFormData({
-        cliente: editingSobre.cliente || '',
-        tipo: editingSobre.tipo || 'reparacion',
-        tipo_reparacion: editingSobre.tipo_reparacion || '',
-        descripcion_grabado: editingSobre.descripcion_grabado || '',
-        estado: editingSobre.estado || 'Pendiente',
-        precio_total: editingSobre.precio_total?.toString() || '',
-        abono: editingSobre.abono?.toString() || '',
-        fecha_limite_entrega: editingSobre.fecha_limite_entrega ? 
-          new Date(editingSobre.fecha_limite_entrega).toISOString().split('T')[0] : '',
-        notas: editingSobre.notas || ''
-      });
-    }
-  }, [editingSobre]);
+  const estados = [
+    { id: '1', nombre: 'Pendiente' },
+    { id: '2', nombre: 'En Proceso' },
+    { id: '3', nombre: 'Completado' },
+    { id: '4', nombre: 'Entregado' }
+  ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const tiposReparacion = [
+    { id: '1', nombre: 'Soldadura' },
+    { id: '2', nombre: 'Pulido' },
+    { id: '3', nombre: 'Grabado' },
+    { id: '4', nombre: 'Engaste' },
+    { id: '5', nombre: 'Restauración' }
+  ];
+
+  const clientes = [
+    { id: '1', nombre: 'María González' },
+    { id: '2', nombre: 'Juan Pérez' },
+    { id: '3', nombre: 'Ana Rodríguez' },
+    { id: '4', nombre: 'Carlos Martínez' }
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      const dataToSubmit = {
-        ...formData,
-        precio_total: parseFloat(formData.precio_total) || 0,
-        abono: parseFloat(formData.abono) || 0,
-        fecha_limite_entrega: formData.fecha_limite_entrega || null
-      };
-
-      if (editingSobre) {
-        const { error } = await supabase
-          .from('sobres')
-          .update(dataToSubmit)
-          .eq('id', editingSobre.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('sobres')
-          .insert([dataToSubmit]);
-
-        if (error) throw error;
-      }
-
-      toast({
-        title: editingSobre ? "Sobre actualizado" : "Sobre creado",
-        description: `El sobre ha sido ${editingSobre ? 'actualizado' : 'creado'} exitosamente.`,
-      });
-
-      onSubmit(dataToSubmit);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `No se pudo ${editingSobre ? 'actualizar' : 'crear'} el sobre`,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    onSubmit(formData);
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl font-bold text-gray-100">
-            {editingSobre ? 'Editar Sobre' : 'Nuevo Sobre'}
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onCancel} className="text-gray-400 hover:text-gray-200">
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="cliente" className="text-gray-200">Cliente *</Label>
-                <Input
-                  id="cliente"
-                  value={formData.cliente}
-                  onChange={(e) => handleChange('cliente', e.target.value)}
-                  required
-                  className="bg-gray-700 border-gray-600 text-gray-100"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="tipo" className="text-gray-200">Tipo *</Label>
-                <Select value={formData.tipo} onValueChange={(value) => handleChange('tipo', value)}>
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    <SelectItem value="reparacion">Reparación</SelectItem>
-                    <SelectItem value="grabado">Grabado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.tipo === 'reparacion' && (
-                <div>
-                  <Label htmlFor="tipo_reparacion" className="text-gray-200">Tipo de Reparación</Label>
-                  <Input
-                    id="tipo_reparacion"
-                    value={formData.tipo_reparacion}
-                    onChange={(e) => handleChange('tipo_reparacion', e.target.value)}
-                    placeholder="Ej: Soldadura, Pulido, Engaste..."
-                    className="bg-gray-700 border-gray-600 text-gray-100"
-                  />
-                </div>
-              )}
-
-              {formData.tipo === 'grabado' && (
-                <div>
-                  <Label htmlFor="descripcion_grabado" className="text-gray-200">Descripción del Grabado</Label>
-                  <Input
-                    id="descripcion_grabado"
-                    value={formData.descripcion_grabado}
-                    onChange={(e) => handleChange('descripcion_grabado', e.target.value)}
-                    placeholder="Describe el grabado..."
-                    className="bg-gray-700 border-gray-600 text-gray-100"
-                  />
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="estado" className="text-gray-200">Estado</Label>
-                <Select value={formData.estado} onValueChange={(value) => handleChange('estado', value)}>
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    <SelectItem value="Pendiente">Pendiente</SelectItem>
-                    <SelectItem value="En Proceso">En Proceso</SelectItem>
-                    <SelectItem value="Completado">Completado</SelectItem>
-                    <SelectItem value="Entregado">Entregado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="precio_total" className="text-gray-200">Precio Total *</Label>
-                <Input
-                  id="precio_total"
-                  type="number"
-                  step="0.01"
-                  value={formData.precio_total}
-                  onChange={(e) => handleChange('precio_total', e.target.value)}
-                  required
-                  className="bg-gray-700 border-gray-600 text-gray-100"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="abono" className="text-gray-200">Abono</Label>
-                <Input
-                  id="abono"
-                  type="number"
-                  step="0.01"
-                  value={formData.abono}
-                  onChange={(e) => handleChange('abono', e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-gray-100"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="fecha_limite_entrega" className="text-gray-200">Fecha Límite de Entrega</Label>
-                <Input
-                  id="fecha_limite_entrega"
-                  type="date"
-                  value={formData.fecha_limite_entrega}
-                  onChange={(e) => handleChange('fecha_limite_entrega', e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-gray-100"
-                />
-              </div>
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader className="bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-t-lg">
+        <CardTitle className="flex items-center gap-2">
+          <span className="text-2xl">💎</span>
+          {editingSobre ? 'Editar Sobre' : 'Nuevo Sobre'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Cliente */}
+            <div className="space-y-2">
+              <Label htmlFor="cliente">Cliente *</Label>
+              <Select value={formData.idCliente} onValueChange={(value) => handleInputChange('idCliente', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente.id} value={cliente.id}>
+                      {cliente.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div>
-              <Label htmlFor="notas" className="text-gray-200">Notas Adicionales</Label>
-              <Textarea
-                id="notas"
-                value={formData.notas}
-                onChange={(e) => handleChange('notas', e.target.value)}
-                placeholder="Notas adicionales sobre el trabajo..."
-                className="bg-gray-700 border-gray-600 text-gray-100"
+            {/* Tipo */}
+            <div className="space-y-2">
+              <Label htmlFor="tipo">Tipo de Servicio *</Label>
+              <Select value={formData.tipo} onValueChange={(value) => handleInputChange('tipo', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reparacion">Reparación</SelectItem>
+                  <SelectItem value="grabado">Grabado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tipo de Reparación */}
+            <div className="space-y-2">
+              <Label htmlFor="tipoReparacion">Tipo de Reparación *</Label>
+              <Select value={formData.idTiposReparacion} onValueChange={(value) => handleInputChange('idTiposReparacion', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar tipo de reparación" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiposReparacion.map((tipo) => (
+                    <SelectItem key={tipo.id} value={tipo.id}>
+                      {tipo.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Estado */}
+            <div className="space-y-2">
+              <Label htmlFor="estado">Estado *</Label>
+              <Select value={formData.idEstado} onValueChange={(value) => handleInputChange('idEstado', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {estados.map((estado) => (
+                    <SelectItem key={estado.id} value={estado.id}>
+                      {estado.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Precio Total */}
+            <div className="space-y-2">
+              <Label htmlFor="precioTotal">Precio Total *</Label>
+              <Input
+                id="precioTotal"
+                type="number"
+                step="0.01"
+                value={formData.precioTotal}
+                onChange={(e) => handleInputChange('precioTotal', e.target.value)}
+                placeholder="0.00"
+                required
               />
             </div>
 
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={loading} className="flex-1 bg-purple-600 hover:bg-purple-700">
-                <Save className="h-4 w-4 mr-2" />
-                {loading ? 'Guardando...' : (editingSobre ? 'Actualizar' : 'Crear')} Sobre
-              </Button>
-              <Button type="button" variant="outline" onClick={onCancel} className="border-gray-600 text-gray-300 hover:bg-gray-700">
-                Cancelar
-              </Button>
+            {/* Abono */}
+            <div className="space-y-2">
+              <Label htmlFor="abono">Abono</Label>
+              <Input
+                id="abono"
+                type="number"
+                step="0.01"
+                value={formData.abono}
+                onChange={(e) => handleInputChange('abono', e.target.value)}
+                placeholder="0.00"
+              />
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+
+            {/* Fecha de Ingreso */}
+            <div className="space-y-2">
+              <Label>Fecha de Ingreso *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.fechaIngreso && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.fechaIngreso ? format(formData.fechaIngreso, "PPP") : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.fechaIngreso}
+                    onSelect={(date) => handleInputChange('fechaIngreso', date)}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Fecha Límite de Entrega */}
+            <div className="space-y-2">
+              <Label>Fecha Límite de Entrega</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.fechaLimiteEntrega && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.fechaLimiteEntrega ? format(formData.fechaLimiteEntrega, "PPP") : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.fechaLimiteEntrega}
+                    onSelect={(date) => handleInputChange('fechaLimiteEntrega', date)}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Descripción del Grabado */}
+          {formData.tipo === 'grabado' && (
+            <div className="space-y-2">
+              <Label htmlFor="descripcionGrabado">Descripción del Grabado</Label>
+              <Textarea
+                id="descripcionGrabado"
+                value={formData.descripcionDelGrabado}
+                onChange={(e) => handleInputChange('descripcionDelGrabado', e.target.value)}
+                placeholder="Describa los detalles del grabado..."
+                rows={3}
+              />
+            </div>
+          )}
+
+          {/* Persona que entregará */}
+          <div className="space-y-2">
+            <Label htmlFor="entregara">Persona que entregará</Label>
+            <Input
+              id="entregara"
+              value={formData.entregara}
+              onChange={(e) => handleInputChange('entregara', e.target.value)}
+              placeholder="Nombre de quien entregará el trabajo"
+            />
+          </div>
+
+          {/* Botones */}
+          <div className="flex justify-end gap-4 pt-6 border-t">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="bg-primary hover:bg-primary-600">
+              {editingSobre ? 'Actualizar' : 'Crear'} Sobre
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 
